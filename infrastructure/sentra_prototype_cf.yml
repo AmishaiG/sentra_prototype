@@ -4,6 +4,7 @@ Description: "Infrastructure for Mini Sentra Exercise"
 Parameters:
   ExistingS3BucketName:
     Type: String
+    Default: ""
     Description: Name of an existing S3 bucket for results (leave empty to create a new one).
 
   CreateNewSNSTopic:
