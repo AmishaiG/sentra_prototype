@@ -17,7 +17,7 @@ Parameters:
 
   ExistingSNSTopicArn:
     Type: String
-    Default: "sentra-results-topic"
+    Default: sentra-results-topic
     Description: Provide the ARN of an existing SNS topic if CreateNewSNSTopic is set to 'false'.
 
 
