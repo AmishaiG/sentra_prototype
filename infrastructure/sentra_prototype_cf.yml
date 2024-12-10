@@ -14,20 +14,16 @@ Parameters:
       - false
     Description: Set to 'true' to create a new SNS topic or 'false' to skip topic creation.
 
-
   ExistingSNSTopicArn:
     Type: String
-    Default: sentra-results-topic
+    Default: ""
     Description: Provide the ARN of an existing SNS topic if CreateNewSNSTopic is set to 'false'.
-
 
 Conditions:
   CreateNewBucket: !Equals [!Ref ExistingS3BucketName, ""]
   CreateSNSTopicCondition: !Equals [!Ref CreateNewSNSTopic, "true"]
 
-
 Resources:
-  # S3 Bucket for Results
   ResultsBucket:
     Type: AWS::S3::Bucket
     Condition: CreateNewBucket
@@ -35,15 +31,13 @@ Resources:
       BucketName: sentra-results-bucket
     DeletionPolicy: Retain
 
-  # SNS Topic
-   ResultsSNSTopic:
+  ResultsSNSTopic:
     Type: AWS::SNS::Topic
     Condition: CreateSNSTopicCondition
     Properties:
       TopicName: sentra-results-topic
     DeletionPolicy: Retain
 
-  # IAM Role for Lambda
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -73,7 +67,6 @@ Resources:
                 Resource: "*"
     DeletionPolicy: Retain
 
-  # Lambda Function
   SentraScannerFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -87,10 +80,12 @@ Resources:
       Environment:
         Variables:
           RESULT_BUCKET: !Ref ResultsBucket
-          RESULT_TOPIC_ARN: !Ref ResultsSNSTopic
+          RESULT_TOPIC_ARN: !If
+            - CreateSNSTopicCondition
+            - !Ref ResultsSNSTopic
+            - !Ref ExistingSNSTopicArn
     DeletionPolicy: Retain
 
-  # CloudWatch Event Rule
   CloudWatchEventRule:
     Type: AWS::Events::Rule
     Properties:
@@ -101,7 +96,6 @@ Resources:
         - Arn: !GetAtt SentraScannerFunction.Arn
           Id: SentraLambdaFunction
 
-  # CloudWatch Permission to Trigger Lambda
   CloudWatchEventPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -110,7 +104,6 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt CloudWatchEventRule.Arn
 
-  # Lambda Permissions for S3
   LambdaPermissionS3:
     Type: AWS::Lambda::Permission
     Properties:
@@ -120,7 +113,7 @@ Resources:
     DeletionPolicy: Retain
 
 Outputs:
-   ResultsBucketName:
+  ResultsBucketName:
     Value: !If
       - CreateNewBucket
       - !Ref ResultsBucket
