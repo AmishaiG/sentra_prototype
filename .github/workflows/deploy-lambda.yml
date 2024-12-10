@@ -29,7 +29,7 @@ jobs:
     # Package the Lambda function
     - name: Package Lambda function
       run: |
-        zip -r lambda_mail_scanner.zip app/lambda_mail_scanner.py
+        zip -r lambda_mail_scanner.zip main.py
 
     # Upload the Lambda package to S3
     - name: Upload to S3
