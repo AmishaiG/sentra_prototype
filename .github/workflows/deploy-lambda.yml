@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: AWS  # Reference the environment where secrets are stored
 
-    steps:
+    steps: 
     # Checkout the repository
     - name: Checkout repository
       uses: actions/checkout@v3
