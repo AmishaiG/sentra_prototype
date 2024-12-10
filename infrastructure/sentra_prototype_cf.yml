@@ -70,12 +70,12 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: SentraScanner
-      Handler: lambda_mail_scanner.lambda_handler
       Runtime: python3.9
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         S3Bucket: sentra-prototype-source-code
         S3Key: lambda_mail_scanner.zip
+      Handler: lambda_mail_scanner.lambda_handler
       Environment:
         Variables:
           RESULT_BUCKET: !Ref ResultsBucket
