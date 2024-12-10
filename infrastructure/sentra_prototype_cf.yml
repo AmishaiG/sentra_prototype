@@ -4,7 +4,7 @@ Description: "Infrastructure for Mini Sentra Exercise"
 Parameters:
   ExistingS3BucketName:
     Type: String
-    Description: sentra-results-bucket
+    Description: Name of an existing S3 bucket for results (leave empty to create a new one).
 
   CreateNewSNSTopic:
     Type: String
@@ -12,11 +12,11 @@ Parameters:
     AllowedValues:
       - true
       - false
-    Description: Set to 'true' to create a new SNS topic or 'false' to skip topic creation.
+    Description: Set to 'true' to create a new SNS topic or 'false' to use an existing one.
 
   ExistingSNSTopicArn:
     Type: String
-    Default: ""
+    Default: sentra-results-topic
     Description: Provide the ARN of an existing SNS topic if CreateNewSNSTopic is set to 'false'.
 
 Conditions:
@@ -35,7 +35,7 @@ Resources:
     Type: AWS::SNS::Topic
     Condition: CreateSNSTopicCondition
     Properties:
-      TopicName: sentra-results-topic
+      # No TopicName specified to avoid conflicts
     DeletionPolicy: Retain
 
   LambdaExecutionRole:
@@ -82,7 +82,7 @@ Resources:
           RESULT_BUCKET: !Ref ResultsBucket
           RESULT_TOPIC_ARN: !If
             - CreateSNSTopicCondition
-            - !Ref ResultsSNSTopic
+            - !GetAtt ResultsSNSTopic.Arn
             - !Ref ExistingSNSTopicArn
     DeletionPolicy: Retain
 
@@ -123,7 +123,7 @@ Outputs:
   ResultsSNSTopicArn:
     Value: !If
       - CreateSNSTopicCondition
-      - !Ref ResultsSNSTopic
+      - !GetAtt ResultsSNSTopic.Arn
       - !Ref ExistingSNSTopicArn
     Description: ARN of the SNS topic (new or existing).
 
