@@ -65,6 +65,26 @@ Resources:
           RESULT_TOPIC_ARN: !Ref ResultsSNSTopic
     DeletionPolicy: Retain
 
+  # CloudWatch Event Rule
+  CloudWatchEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: SentraLambdaTrigger
+      ScheduleExpression: rate(24 hours)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SentraScannerFunction.Arn
+          Id: SentraLambdaFunction
+
+  # CloudWatch Permission to Trigger Lambda
+  CloudWatchEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SentraScannerFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CloudWatchEventRule.Arn
+
   # Lambda Permissions for S3
   LambdaPermissionS3:
     Type: AWS::Lambda::Permission
