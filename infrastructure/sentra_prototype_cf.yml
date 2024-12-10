@@ -16,6 +16,13 @@ Resources:
       TopicName: sentra-results-topic
     DeletionPolicy: Retain
 
+  ResultsSNSTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref ResultsSNSTopic
+      Endpoint: aguilburd@gmail.com
+
   # IAM Role for Lambda
   LambdaExecutionRole:
     Type: AWS::IAM::Role
