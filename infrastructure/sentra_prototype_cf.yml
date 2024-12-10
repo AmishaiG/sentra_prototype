@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Infrastructure for Mini Sentra Exercise"
+
+Resources:
+  # S3 Bucket for Results
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: sentra-results-bucket
+    DeletionPolicy: Retain
+
+  # SNS Topic
+  ResultsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sentra-results-topic
+    DeletionPolicy: Retain
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SentraLambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SentraS3AccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                  - s3:ListBucket
+                  - s3:GetObject
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: "*"
+    DeletionPolicy: Retain
+
+  # Lambda Function
+  SentraScannerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: SentraScanner
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import re
+          import json
+          import os
+
+          s3 = boto3.client('s3')
+          sns = boto3.client('sns')
+
+          RESULT_BUCKET = os.environ['RESULT_BUCKET']
+          RESULT_TOPIC_ARN = os.environ.get('RESULT_TOPIC_ARN')
+
+          def lambda_handler(event, context):
+              results = {}
+              buckets = s3.list_buckets()['Buckets']
+              for bucket in buckets:
+                  bucket_name = bucket['Name']
+                  files = s3.list_objects_v2(Bucket=bucket_name).get('Contents', [])
+                  for file in files:
+                      file_key = file['Key']
+                      obj = s3.get_object(Bucket=bucket_name, Key=file_key)
+                      content = obj['Body'].read().decode('utf-8', errors='ignore')
+                      emails = extract_emails(content)
+                      if emails:
+                          results[file_key] = emails
+
+              save_results_to_s3(results)
+              publish_results(results)
+              return {"status": "success", "results": results}
+
+          def extract_emails(content):
+              email_regex = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+              return re.findall(email_regex, content)
+
+          def save_results_to_s3(results):
+              result_file = "/tmp/results.json"
+              with open(result_file, 'w') as f:
+                  json.dump(results, f)
+              s3.upload_file(result_file, RESULT_BUCKET, "results.json")
+
+          def publish_results(results):
+              if RESULT_TOPIC_ARN:
+                  sns.publish(TopicArn=RESULT_TOPIC_ARN, Message=json.dumps(results))
+      Environment:
+        Variables:
+          RESULT_BUCKET: !Ref ResultsBucket
+          RESULT_TOPIC_ARN: !Ref ResultsSNSTopic
+    DeletionPolicy: Retain
+
+  # CloudWatch Event Rule
+  CloudWatchEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: SentraLambdaTrigger
+      ScheduleExpression: rate(24 hours)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SentraScannerFunction.Arn
+          Id: SentraLambdaFunction
+
+  # CloudWatch Permission to Trigger Lambda
+  CloudWatchEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SentraScannerFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CloudWatchEventRule.Arn
+
+  # Lambda Permissions for S3
+  LambdaPermissionS3:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SentraScannerFunction
+      Action: "lambda:InvokeFunction"
+      Principal: "s3.amazonaws.com"
+    DeletionPolicy: Retain
+
+Outputs:
+  ResultsBucketName:
+    Description: "S3 bucket where results are stored."
+    Value: !Ref ResultsBucket
+
+  ResultsSNSTopicARN:
+    Description: "SNS Topic ARN for publishing results."
+    Value: !Ref ResultsSNSTopic
+
+  LambdaFunctionName:
+    Description: "Name of the Lambda function."
+    Value: !Ref SentraScannerFunction
