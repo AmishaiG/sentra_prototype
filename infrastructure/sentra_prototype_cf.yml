@@ -39,6 +39,7 @@ Resources:
                   - s3:ListAllMyBuckets
                   - s3:ListBucket
                   - s3:GetObject
+                  - s3:PutObject  
                 Resource: "*"
               - Effect: Allow
                 Action:
