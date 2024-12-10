@@ -13,7 +13,7 @@ Parameters:
       - true
       - false
     Description: Set to 'true' to create a new SNS topic or 'false' to use an existing one.
-
+ 
   ExistingSNSTopicArn:
     Type: String
     Default: sentra-results-topic
@@ -75,7 +75,7 @@ Resources:
       Runtime: python3.9
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        S3Bucket: source-code-sentra-prototype
+        S3Bucket: sentra-prototype-source-code
         S3Key: lambda_mail_scanner.zip
       Environment:
         Variables:
