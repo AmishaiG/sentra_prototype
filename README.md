@@ -4,7 +4,7 @@ This project implements a prototype of Sentra to scan AWS S3 buckets, extract em
 
 ## Directory Structure
 
-- `main.py`: Lambda function code.
+- `lambda_mail_scanner.py`: Lambda function code.
 - `infrastructure/sentra_prototype_cf.yml`: CloudFormation template to deploy resources.
 - `requirements.txt`: Python dependencies.
 
