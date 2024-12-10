@@ -1,0 +1,52 @@
+name: Deploy Lambda to AWS
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow when pushing to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.9
+
+    # Install dependencies (if any are in requirements.txt)
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    # Package the Lambda function
+    - name: Package Lambda function
+      run: |
+        zip -r lambda_mail_scanner.zip app/lambda_mail_scanner.py
+
+    # Upload the Lambda package to S3
+    - name: Upload to S3
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws s3 cp lambda_mail_scanner.zip s3://source-code-sentra-prototype/lambda_mail_scanner.zip
+
+    # Update CloudFormation stack
+    - name: Deploy CloudFormation stack
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        aws cloudformation deploy \
+          --template-file infrastructure/sentra_prototype_cf.yml \
+          --stack-name MiniSentraStack \
+          --capabilities CAPABILITY_NAMED_IAM
