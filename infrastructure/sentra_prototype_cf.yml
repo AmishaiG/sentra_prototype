@@ -17,7 +17,7 @@ Parameters:
  
   ExistingSNSTopicArn:
     Type: String
-    Default: sentra-results-topic
+    Default: ""
     Description: Provide the ARN of an existing SNS topic if CreateNewSNSTopic is set to 'false'.
 
 Conditions:
@@ -35,8 +35,6 @@ Resources:
   ResultsSNSTopic:
     Type: AWS::SNS::Topic
     Condition: CreateSNSTopicCondition
-    Properties:
-      # No TopicName specified to avoid conflicts
     DeletionPolicy: Retain
 
   LambdaExecutionRole:
