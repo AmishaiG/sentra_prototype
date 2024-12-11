@@ -12,7 +12,7 @@ RESULT_TOPIC_ARN = os.environ.get('RESULT_TOPIC_ARN')
 def lambda_handler(event, context):
     results = {}
     buckets = s3.list_buckets()['Buckets']
-    print("test2")
+    print("test3")
     for bucket in buckets:
         bucket_name = bucket['Name']
         files = s3.list_objects_v2(Bucket=bucket_name).get('Contents', [])
