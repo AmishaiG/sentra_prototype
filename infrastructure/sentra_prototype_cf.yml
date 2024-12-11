@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Infrastructure for Mini Sentra Exercise"
 
+
+Parameters:
+  S3ObjectVersion:
+    Type: String
+    Description: S3 object version of the Lambda deployment package.
+
 Resources:
   # S3 Bucket for Results
   ResultsBucket:
@@ -64,6 +70,7 @@ Resources:
       Code:
         S3Bucket: sentra-prototype-source-code
         S3Key: lambda_mail_scanner.zip
+        S3ObjectVersion: !Ref S3ObjectVersion
       Handler: lambda_mail_scanner.lambda_handler
       
       Environment:

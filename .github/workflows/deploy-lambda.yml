@@ -40,6 +40,20 @@ jobs:
       run: |
         aws s3 cp lambda_mail_scanner.zip s3://sentra-prototype-source-code/lambda_mail_scanner.zip
 
+    - name: Retrieve S3 Object Version
+      id: get_version
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+          VERSION_ID=$(aws s3api list-object-versions \
+            --bucket sentra-prototype-source-code \
+            --prefix lambda_mail_scanner.zip \
+            --query 'Versions[?IsLatest].VersionId' --output text)
+          echo "S3_VERSION_ID=${VERSION_ID}" >> $GITHUB_ENV
+        
+
     # Update CloudFormation stack
     - name: Deploy CloudFormation stack
       env:
@@ -50,4 +64,5 @@ jobs:
         aws cloudformation deploy \
           --template-file infrastructure/sentra_prototype_cf.yml \
           --stack-name MiniSentraStack \
+          --parameter-overrides S3ObjectVersion=$S3_VERSION_ID \
           --capabilities CAPABILITY_NAMED_IAM
