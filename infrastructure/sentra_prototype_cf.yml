@@ -21,7 +21,7 @@ Resources:
     Properties:
       Protocol: email
       TopicArn: !Ref ResultsSNSTopic
-      Endpoint: aguilburd@gmail.com
+      Endpoint: amishai_g@yahoo.com
 
   # IAM Role for Lambda
   LambdaExecutionRole:
